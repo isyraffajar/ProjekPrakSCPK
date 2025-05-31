@@ -1,9 +1,10 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
-# --- DEFINISI VARIABLE ---
+# --- DEFINISI VARIABEL ---
 tekanan = ctrl.Antecedent(np.arange(0, 6, 1), 'tekanan')
 cgpa = ctrl.Antecedent(np.arange(0, 11, 1), 'cgpa')
 finansial = ctrl.Antecedent(np.arange(0, 6, 1), 'finansial')
@@ -11,7 +12,7 @@ kepuasan = ctrl.Antecedent(np.arange(0, 6, 1), 'kepuasan')
 jam_belajar = ctrl.Antecedent(np.arange(0, 13, 1), 'jam_belajar')
 resiko = ctrl.Consequent(np.arange(0, 101, 1), 'resiko')
 
-# --- FUZZY MEMBERSHIP FUNCTION ---
+# --- FUZZY FUNGSI KEANGGOTAAN ---
 tekanan['rendah'] = fuzz.trimf(tekanan.universe, [0, 0, 2])
 tekanan['sedang'] = fuzz.trimf(tekanan.universe, [1, 2.5, 4])
 tekanan['tinggi'] = fuzz.trimf(tekanan.universe, [3, 5, 5])
@@ -55,45 +56,43 @@ rules = [
     ctrl.Rule(jam_belajar['sedang'], resiko['sedang']),
 ]
 
+resiko_ctrl = ctrl.ControlSystem(rules) #membuat sistem fuzzy dengan rules yang sudah dibuat
 
+#masukkan dataset
+df = pd.read_csv('student_depression_dataset')
+df_value = df[["Academic Pressure","CGPA","FInancial Stress","Study Satisfaction","Work/Study Hours"]].to_numpy()
+st.dataframe(df_value)
 
-resiko_ctrl = ctrl.ControlSystem(rules)
 
 # --- STREAMLIT UI ---
 st.title("🎓 Fuzzy Sistem Prediksi Risiko Depresi Siswa")
 st.markdown("Masukkan nilai untuk masing-masing kriteria:")
 
-input_tekanan = st.slider("Tekanan Akademik (0–5)", 0, 5, 3)
-input_cgpa = st.slider("Nilai IPK/CGPA (0–10)", 0, 10, 6)
-input_finansial = st.slider("Beban Finansial (0–5)", 0, 5, 2)
-input_kepuasan = st.slider("Kepuasan Belajar (0–5)", 0, 5, 3)
-input_jam = st.slider("Jam Belajar per Hari (0–12)", 0, 12, 5)
+input_tekanan = st.slider("Tekanan Akademik (0-5)", 0, 5, 3)
+input_cgpa = st.slider("Nilai IPK/CGPA (0-10)", 0, 10, 6)
+input_finansial = st.slider("Beban Finansial (0-5)", 0, 5, 2)
+input_kepuasan = st.slider("Kepuasan Belajar (0-5)", 0, 5, 3)
+input_jam = st.slider("Jam Belajar per Hari (0-12)", 0, 12, 5)
 
 if st.button("🔍 Hitung Risiko"):
-    # --- Simulasi dilakukan setiap tombol ditekan ---
+    # --- MUlai Simulasi Perhitungan Fuzzy ---
     resiko_simulasi = ctrl.ControlSystemSimulation(resiko_ctrl)
+    resiko_simulasi.input['tekanan'] = input_tekanan
+    resiko_simulasi.input['cgpa'] = input_cgpa
+    resiko_simulasi.input['finansial'] = input_finansial
+    resiko_simulasi.input['kepuasan'] = input_kepuasan
+    resiko_simulasi.input['jam_belajar'] = input_jam
 
-    try:
-        # Input ke sistem fuzzy
-        resiko_simulasi.input['tekanan'] = input_tekanan
-        resiko_simulasi.input['cgpa'] = input_cgpa
-        resiko_simulasi.input['finansial'] = input_finansial
-        resiko_simulasi.input['kepuasan'] = input_kepuasan
-        resiko_simulasi.input['jam_belajar'] = input_jam
+    resiko_simulasi.compute()
+    hasil = resiko_simulasi.output['resiko']
 
-        # Hitung hasil fuzzy
-        resiko_simulasi.compute()
-        hasil = resiko_simulasi.output['resiko']
+    # Tampilkan hasil
+    st.subheader("📈 Hasil Prediksi")
+    st.write(f"Tingkat Risiko Depresi: **{hasil:.2f}** dari 100")
 
-        # Tampilkan hasil
-        st.subheader("📈 Hasil Prediksi")
-        st.write(f"Tingkat Risiko Depresi: **{hasil:.2f}** dari 100")
-
-        if hasil < 40:
-            st.success("Kategori Risiko: RENDAH")
-        elif hasil < 70:
-            st.warning("Kategori Risiko: SEDANG")
-        else:
-            st.error("Kategori Risiko: TINGGI")
-    except Exception as e:
-        st.error(f"Gagal menghitung risiko: {e}")
+    if hasil < 40:
+        st.success("Kategori Risiko: RENDAH")
+    elif hasil < 70:
+        st.warning("Kategori Risiko: SEDANG")
+    else:
+        st.error("Kategori Risiko: TINGGI")
