@@ -48,14 +48,19 @@ rules = [
     ctrl.Rule(jam_belajar['rendah'] & kepuasan['rendah'], resiko['tinggi']),
     ctrl.Rule(cgpa['tinggi'] & tekanan['rendah'] & kepuasan['tinggi'], resiko['rendah']),
     ctrl.Rule(finansial['tinggi'] & jam_belajar['rendah'], resiko['tinggi']),
+    ctrl.Rule(tekanan['sedang'], resiko['sedang']),
+    ctrl.Rule(cgpa['sedang'], resiko['sedang']),
+    ctrl.Rule(finansial['sedang'], resiko['sedang']),
+    ctrl.Rule(kepuasan['sedang'], resiko['sedang']),
+    ctrl.Rule(jam_belajar['sedang'], resiko['sedang']),
 ]
 
+
+
 resiko_ctrl = ctrl.ControlSystem(rules)
-resiko_simulasi = ctrl.ControlSystemSimulation(resiko_ctrl)
 
 # --- STREAMLIT UI ---
 st.title("🎓 Fuzzy Sistem Prediksi Risiko Depresi Siswa")
-
 st.markdown("Masukkan nilai untuk masing-masing kriteria:")
 
 input_tekanan = st.slider("Tekanan Akademik (0–5)", 0, 5, 3)
@@ -65,23 +70,30 @@ input_kepuasan = st.slider("Kepuasan Belajar (0–5)", 0, 5, 3)
 input_jam = st.slider("Jam Belajar per Hari (0–12)", 0, 12, 5)
 
 if st.button("🔍 Hitung Risiko"):
-    # Input ke simulasi
-    resiko_simulasi.input['tekanan'] = input_tekanan
-    resiko_simulasi.input['cgpa'] = input_cgpa
-    resiko_simulasi.input['finansial'] = input_finansial
-    resiko_simulasi.input['kepuasan'] = input_kepuasan
-    resiko_simulasi.input['jam_belajar'] = input_jam
+    # --- Simulasi dilakukan setiap tombol ditekan ---
+    resiko_simulasi = ctrl.ControlSystemSimulation(resiko_ctrl)
 
-    resiko_simulasi.compute()
-    hasil = resiko_simulasi.output['resiko']
+    try:
+        # Input ke sistem fuzzy
+        resiko_simulasi.input['tekanan'] = input_tekanan
+        resiko_simulasi.input['cgpa'] = input_cgpa
+        resiko_simulasi.input['finansial'] = input_finansial
+        resiko_simulasi.input['kepuasan'] = input_kepuasan
+        resiko_simulasi.input['jam_belajar'] = input_jam
 
-    # Output
-    st.subheader("📈 Hasil Prediksi")
-    st.write(f"Tingkat Risiko Depresi: **{hasil:.2f}** dari 100")
+        # Hitung hasil fuzzy
+        resiko_simulasi.compute()
+        hasil = resiko_simulasi.output['resiko']
 
-    if hasil < 40:
-        st.success("Kategori Risiko: RENDAH")
-    elif hasil < 70:
-        st.warning("Kategori Risiko: SEDANG")
-    else:
-        st.error("Kategori Risiko: TINGGI")
+        # Tampilkan hasil
+        st.subheader("📈 Hasil Prediksi")
+        st.write(f"Tingkat Risiko Depresi: **{hasil:.2f}** dari 100")
+
+        if hasil < 40:
+            st.success("Kategori Risiko: RENDAH")
+        elif hasil < 70:
+            st.warning("Kategori Risiko: SEDANG")
+        else:
+            st.error("Kategori Risiko: TINGGI")
+    except Exception as e:
+        st.error(f"Gagal menghitung risiko: {e}")
