@@ -27,7 +27,7 @@ resiko['rendah'] = fuzz.trimf(resiko.universe, [0, 0, 40])
 resiko['sedang'] = fuzz.trimf(resiko.universe, [30, 50, 70])
 resiko['tinggi'] = fuzz.trimf(resiko.universe, [60, 100, 100])
 
-# --- FUZZY RULES (3 VARIABEL) ---
+# --- FUZZY RULES ---
 rules = [
 
 ctrl.Rule(tekanan['rendah'] & cgpa['rendah'] & jam_belajar['rendah'], resiko['rendah']),
@@ -67,16 +67,17 @@ ctrl.Rule(tekanan['tinggi'] & cgpa['tinggi'] & jam_belajar['sedang'], resiko['se
 ctrl.Rule(tekanan['tinggi'] & cgpa['tinggi'] & jam_belajar['tinggi'], resiko['tinggi'])
 
 ]
+
+# --- READ DATASET CSV ---
 df = pd.read_csv('student_depression_dataset.csv')
-df_values = 
-# --- SISTEM KONTROL FUZZY ---
-resiko_ctrl = ctrl.ControlSystem(rules)
-resiko_simulasi = ctrl.ControlSystemSimulation(resiko_ctrl)
+values = df[["id","Academic Pressure","CGPA","Work/Study Hours"]].to_numpy()
+df_values = pd.DataFrame(values,columns=["id_siswa","Tekanan Akademik","CGPA","Jam Belajar"])
+
 
 # --- STREAMLIT UI ---
 st.title("🎓 Sistem Prediksi Risiko Depresi Mahasiswa Dengan Metode Fuzzy Logic")
 
-tab1,tab2 = st.tabs
+
 st.markdown("Masukkan nilai berikut:")
 col1,col2 =st.columns(2)
 with col1:
@@ -84,20 +85,50 @@ with col1:
     input_cgpa = st.slider("Nilai IPK / CGPA (0-10)", 0, 10, 6)
     input_jam = st.slider("Jam Belajar / Hari (0-12)", 0, 12, 5)
 
+
+# --- HITUNG FUZZY ---
 if st.button("🔍 Prediksi Risiko"):
-    resiko_simulasi.input['tekanan'] = input_tekanan
-    resiko_simulasi.input['cgpa'] = input_cgpa
-    resiko_simulasi.input['jam_belajar'] = input_jam
 
-    resiko_simulasi.compute()
-    hasil = resiko_simulasi.output['resiko']
-    
+    #hitungan input slider
+    slider_resiko_ctrl = ctrl.ControlSystem(rules)
+    slider_resiko_simulasi = ctrl.ControlSystemSimulation(slider_resiko_ctrl)
+    #masukkan data slider ke Fuzzy
+    slider_resiko_simulasi.input['tekanan'] = input_tekanan
+    slider_resiko_simulasi.input['cgpa'] = input_cgpa
+    slider_resiko_simulasi.input['jam_belajar'] = input_jam
+
+    slider_resiko_simulasi.compute()
+    slider_hasil = slider_resiko_simulasi.output['resiko']
+
+    #masukkan dataset ke fuzzy
+    dataset_hasil = []
+    dataset_resiko_ctrl = ctrl.ControlSystem(rules)
+    for x in values:
+        dataset_resiko_simulasi = ctrl.ControlSystemSimulation(dataset_resiko_ctrl)
+        dataset_resiko_simulasi.input['tekanan'] = x[1]
+        dataset_resiko_simulasi.input['cgpa'] = x[2]
+        dataset_resiko_simulasi.input['jam_belajar'] = x[3]
+
+        dataset_resiko_simulasi.compute()
+        dataset_hasil.append(dataset_resiko_simulasi.output['resiko']) 
+
+    # Hasil Perhitungan
     st.subheader("📈 Hasil Prediksi")
-    st.write(f"Tingkat Risiko Depresi: **{hasil:.2f}** dari 100")
+    st.write(f"Tingkat Risiko Depresi: **{slider_hasil:.2f}** dari 100")
 
-    if hasil < 40:
+    df_hasil = pd.DataFrame(dataset_hasil,columns=["Resiko"])
+    df_gabung = pd.concat([df_values,df_hasil],axis=1)
+
+    if slider_hasil < 40:
         st.success("Kategori Risiko: RENDAH")
-    elif hasil < 70:
+        st.write("### Dataset siswa dengan Risiko Rendah : ")
+        st.dataframe(df_gabung[df_gabung["Resiko"]<40])
+    elif slider_hasil < 70:
         st.warning("Kategori Risiko: SEDANG")
+        st.write("### Dataset siswa dengan Risiko Sedang : ")
+        st.dataframe(df_gabung[(df_gabung["Resiko"]>=40) & (df_gabung["Resiko"]<70)])
     else:
         st.error("Kategori Risiko: TINGGI")
+        st.write("### Dataset siswa dengan Risiko Tinggi : ")
+        st.dataframe(df_gabung[df_gabung["Resiko"]>=70])
+    
