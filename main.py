@@ -68,6 +68,7 @@ ctrl.Rule(tekanan['tinggi'] & cgpa['tinggi'] & jam_belajar['tinggi'], resiko['ti
 
 ]
 df = pd.read_csv('student_depression_dataset.csv')
+df_values = 
 # --- SISTEM KONTROL FUZZY ---
 resiko_ctrl = ctrl.ControlSystem(rules)
 resiko_simulasi = ctrl.ControlSystemSimulation(resiko_ctrl)
