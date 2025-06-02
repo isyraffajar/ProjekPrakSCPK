@@ -83,18 +83,18 @@ if st.button("🔍 Hitung Risiko"):
     hasil = resiko_simulasi.output['resiko']
 
     # --- Simulasi Perhitungan Fuzzy dengan Dataset  ---
-    daset_hasil = []
-    for x in df_value:
-        daset_resiko_simulasi = ctrl.ControlSystemSimulation(resiko_ctrl)
-        daset_resiko_simulasi.input['tekanan'] = x[0]
-        daset_resiko_simulasi.input['cgpa'] = x[1]
-        daset_resiko_simulasi.input['finansial'] = x[2]
-        daset_resiko_simulasi.input['kepuasan'] = x[3]
-        daset_resiko_simulasi.input['jam_belajar'] = x[4]
+    # daset_hasil = []
+    # for x in df_value:
+    #     daset_resiko_simulasi = ctrl.ControlSystemSimulation(resiko_ctrl)
+    #     daset_resiko_simulasi.input['tekanan'] = x[0]
+    #     daset_resiko_simulasi.input['cgpa'] = x[1]
+    #     daset_resiko_simulasi.input['finansial'] = x[2]
+    #     daset_resiko_simulasi.input['kepuasan'] = x[3]
+    #     daset_resiko_simulasi.input['jam_belajar'] = x[4]
 
-        daset_resiko_simulasi.compute()
-        st.write(f"{daset_resiko_simulasi.output}")
-        daset_hasil.append(daset_resiko_simulasi.output['resiko']) 
+    #     daset_resiko_simulasi.compute()
+    #     st.write(f"{daset_resiko_simulasi.output}")
+    #     daset_hasil.append(daset_resiko_simulasi.output['resiko']) 
 
     # Tampilkan hasil
     st.subheader("📈 Hasil Prediksi")
