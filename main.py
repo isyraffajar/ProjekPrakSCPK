@@ -77,7 +77,7 @@ df_values = pd.DataFrame(values,columns=["id_siswa","Tekanan Akademik","CGPA","J
 
 # --- STREAMLIT UI ---
 st.title("🎓 Sistem Prediksi Risiko Depresi Mahasiswa Dengan Metode Fuzzy Logic")
-st.write("##### Sistem ini merupakan aplikasi prediksi risiko depresi pada siswa/mahasiswa berbasis logika fuzzy.")
+st.write("SPK Fuzzy adalah metode pengambilan keputusan yang menggunakan logika fuzzy untuk menangani ketidakpastian dan nilai-nilai 'abu-abu' dalam data manusia. Berbeda dengan logika biasa yang hanya mengenal ya/tidak atau 1/0, logika fuzzy memungkinkan nilai di antaranya, seperti 'sedikit cemas' atau 'cukup tertekan' sehingga lebih sesuai dengan cara manusia berpikir.")
 
 st.markdown("Silahkan Masukkan nilai berikut:")
 col1,col2 =st.columns(2)
@@ -86,10 +86,9 @@ with col1:
     input_cgpa = st.slider("Nilai IPK / CGPA (0-10)", 0, 10, 6)
     input_jam = st.slider("Jam Belajar / Hari (0-12)", 0, 12, 5)
 
-
 # --- HITUNG FUZZY ---
 if st.button("🔍 Prediksi Risiko"):
-    tab1,tab2 = st.tabs(["Quick Result","Detailed Result"])
+    tab1,tab2 = st.tabs(["🚀Quick Result","📈Detailed Result"])
     with tab1:
 
         #hitungan input slider
@@ -122,63 +121,121 @@ if st.button("🔍 Prediksi Risiko"):
         df_hasil = pd.DataFrame(dataset_hasil,columns=["Resiko"])
         df_gabung = pd.concat([df_values,df_hasil],axis=1)
 
+        df_rendah = df_gabung[df_gabung["Resiko"] < 40]
+        df_sedang = df_gabung[(df_gabung["Resiko"] >= 40) & (df_gabung["Resiko"] < 70)] 
+        df_tinggi = df_gabung[df_gabung["Resiko"] >= 70]
+
+
         if slider_hasil < 40:
             st.success("Kategori Risiko: RENDAH")
             st.write("### Dataset siswa dengan Risiko Rendah : ")
-            st.dataframe(df_gabung[df_gabung["Resiko"]<40])
+            st.dataframe(df_rendah)
         elif slider_hasil < 70:
             st.warning("Kategori Risiko: SEDANG")
             st.write("### Dataset siswa dengan Risiko Sedang : ")
-            st.dataframe(df_gabung[(df_gabung["Resiko"]>=40) & (df_gabung["Resiko"]<70)])
+            st.dataframe(df_sedang)
         else:
             st.error("Kategori Risiko: TINGGI")
             st.write("### Dataset siswa dengan Risiko Tinggi : ")
-            st.dataframe(df_gabung[df_gabung["Resiko"]>=70])
+            st.dataframe(df_tinggi)
     with tab2:
         st.subheader("Detail Proses Perhitungan Fuzzy dengan Grafik")
-
+        # --- Tampilan Input ---
         st.write("### 1. Tentukan input data")
         st.markdown("**Input:**")
         st.text(f"Tekanan Akademik: {input_tekanan}\nCGPA: {input_cgpa}\nJam Belajar: {input_jam}")
+        # --- Derajat Keanggotaan ---
+        st.write("### 2. Derajat Keanggotaan Input")
+        st.text("Derajat keanggotaan menunjukkan seberapa besar nilai input termasuk dalam masing-masing kategori fuzzy.")
+        keanggotaan_dict = {
+            'Tekanan Akademik': {},
+            'CGPA': {},
+            'Jam Belajar': {}
+        }
 
-        st.write("### 2. Grafik Fungsi Keanggotaan Input")
+        #derajat keanggotaan Tekanan Akademik
+        for label in tekanan.terms:
+            keanggotaan_dict['Tekanan Akademik'][label] = fuzz.interp_membership(tekanan.universe, tekanan[label].mf, input_tekanan)
+
+        #derajat keanggotaan CGPA
+        for label in cgpa.terms:
+            keanggotaan_dict['CGPA'][label] = fuzz.interp_membership(cgpa.universe, cgpa[label].mf, input_cgpa)
+
+        #derajat keanggotaan Jam Belajar
+        for label in jam_belajar.terms:
+            keanggotaan_dict['Jam Belajar'][label] = fuzz.interp_membership(jam_belajar.universe, jam_belajar[label].mf, input_jam)
+
+        df_keanggotaan = pd.DataFrame(keanggotaan_dict).T
+        st.dataframe(df_keanggotaan)
+
+        # --- Grafik Keanggotaan --- 
+        st.write("### 3. Grafik Fungsi Keanggotaan Input")
+        st.text("Grafik ini menunjukkan bentuk fungsi keanggotaan fuzzy dari masing-masing variabel input dan posisi nilai input.")
+        st.write("##### Grafik input : ")
         # Plot fungsi keanggotaan tekanan akademik
         fig, ax = plt.subplots(figsize=(8, 3))
+        t_batas_akhir = tekanan.universe <= 4.9
         for term in tekanan.terms:
-            mf = tekanan[term].mf
-            ax.plot(tekanan.universe, mf, label=term)
+            mf = tekanan[term].mf[t_batas_akhir]
+            ax.plot(tekanan.universe[t_batas_akhir] , mf, label=term)
         ax.axvline(input_tekanan, color='k', linestyle='--', label=f'Input: {input_tekanan}')
         ax.set_title("Fungsi Keanggotaan Tekanan Akademik")
-        ax.legend()
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         st.pyplot(fig)
 
         # Plot fungsi keanggotaan CGPA
         fig, ax = plt.subplots(figsize=(8, 3))
+        c_batas_akhir = cgpa.universe <= 9.9
         for term in cgpa.terms:
-            mf = cgpa[term].mf
-            ax.plot(cgpa.universe, mf, label=term)
+            mf = cgpa[term].mf[c_batas_akhir]
+            ax.plot(cgpa.universe[c_batas_akhir], mf, label=term)
         ax.axvline(input_cgpa, color='k', linestyle='--', label=f'Input: {input_cgpa}')
         ax.set_title("Fungsi Keanggotaan CGPA")
-        ax.legend()
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         st.pyplot(fig)
 
         # Plot fungsi keanggotaan Jam Belajar
         fig, ax = plt.subplots(figsize=(8, 3))
+        j_batas_akhir = jam_belajar.universe <= 11.9
         for term in jam_belajar.terms:
-            mf = jam_belajar[term].mf
-            ax.plot(jam_belajar.universe, mf, label=term)
+            mf = jam_belajar[term].mf[j_batas_akhir]
+            ax.plot(jam_belajar.universe[j_batas_akhir], mf, label=term)
         ax.axvline(input_jam, color='k', linestyle='--', label=f'Input: {input_jam}')
         ax.set_title("Fungsi Keanggotaan Jam Belajar")
-        ax.legend()
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         st.pyplot(fig)
 
         # Plot fungsi keanggotaan output resiko dengan hasil defuzzifikasi
+        st.write("##### Grafik output : ")
         fig, ax = plt.subplots(figsize=(8, 3))
+        r_batas_akhir = resiko.universe <= 99.9
         for term in resiko.terms:
-            mf = resiko[term].mf
-            ax.plot(resiko.universe, mf, label=term)
+            mf = resiko[term].mf[r_batas_akhir]
+            ax.plot(resiko.universe[r_batas_akhir], mf, label=term)
         ax.axvline(slider_hasil, color='r', linestyle='--', label=f'Output (Resiko): {slider_hasil:.2f}')
         ax.set_title("Fungsi Keanggotaan Resiko Depresi")
-        ax.legend()
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         st.pyplot(fig)
+
+        # --- Grafik dataset ---
+        st.write("### 4. Visual Dataset Resiko Depresi")
+        st.text("Visualisasi tingkat risiko depresi dari dataset mahasiswa yang dianalisis berdasarkan hasil fuzzy logic.")
+
+        fig, ax = plt.subplots(figsize=(8, 4)) 
+        if slider_hasil < 40:
+            ax.plot(df_rendah.head(10).index, df_rendah.head(10)["Resiko"], marker='o', label='Risiko Rendah')
+        elif slider_hasil < 70:
+            ax.plot(df_sedang.head(10).index, df_sedang.head(10)["Resiko"], marker='s', label='Risiko Sedang')
+        else:
+            ax.plot(df_tinggi.head(10).index, df_tinggi.head(10)["Resiko"], marker='^', label='Risiko Tinggi')
+        
+
+        ax.set_xlabel("Baris Data")
+        ax.set_ylabel("Tingkat Risiko Depresi")
+        ax.set_title("Plot Risiko Depresi Mahasiswa (10 Data Teratas)")
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Kategori Risiko')
+        ax.grid(True) 
+        st.pyplot(fig)
+
+
         
