@@ -221,21 +221,37 @@ if st.button("🔍 Prediksi Risiko"):
         st.write("### 4. Visual Dataset Resiko Depresi")
         st.text("Visualisasi tingkat risiko depresi dari dataset mahasiswa yang dianalisis berdasarkan hasil fuzzy logic.")
 
+        st.write("##### Grafik berdasar kategori risiko")
         fig, ax = plt.subplots(figsize=(8, 4)) 
         if slider_hasil < 40:
-            ax.plot(df_rendah.head(10).index, df_rendah.head(10)["Resiko"], marker='o', label='Risiko Rendah')
+            ax.plot(df_rendah.head(15).index, df_rendah.head(15)["Resiko"], marker='o', label='Risiko Rendah', color='g')
         elif slider_hasil < 70:
-            ax.plot(df_sedang.head(10).index, df_sedang.head(10)["Resiko"], marker='s', label='Risiko Sedang')
+            ax.plot(df_sedang.head(15).index, df_sedang.head(15)["Resiko"], marker='o', label='Risiko Sedang', color='y')
         else:
-            ax.plot(df_tinggi.head(10).index, df_tinggi.head(10)["Resiko"], marker='^', label='Risiko Tinggi')
+            ax.plot(df_tinggi.head(15).index, df_tinggi.head(15)["Resiko"], marker='o', label='Risiko Tinggi', color='r')
         
-
+        
         ax.set_xlabel("Baris Data")
         ax.set_ylabel("Tingkat Risiko Depresi")
-        ax.set_title("Plot Risiko Depresi Mahasiswa (10 Data Teratas)")
+        ax.set_title("Plot Risiko Depresi Mahasiswa berdasar kategori (15 Data Teratas)")
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Kategori Risiko')
         ax.grid(True) 
         st.pyplot(fig)
+
+        fig, ax = plt.subplots(figsize=(8, 4)) 
+        ax.plot(df_rendah.head(15).index, df_rendah.head(15)["Resiko"], marker='o', label='Risiko Rendah',color='g')
+        ax.plot(df_sedang.head(15).index, df_sedang.head(15)["Resiko"], marker='o', label='Risiko Sedang', color='y')
+        ax.plot(df_tinggi.head(15).index, df_tinggi.head(15)["Resiko"], marker='o', label='Risiko Tinggi', color='r')
+        
+        st.write("##### Grafik Keseluruhan")
+        ax.set_xlabel("Baris Data")
+        ax.set_ylabel("Tingkat Risiko Depresi")
+        ax.set_title("Plot Risiko Depresi Mahasiswa seluruh kategori (15 Data Teratas)")
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Kategori Risiko')
+        ax.grid(True) 
+        st.pyplot(fig)
+
+
 
 
         
